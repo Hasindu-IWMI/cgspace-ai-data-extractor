@@ -28,6 +28,7 @@ import math
 from streamlit_autorefresh import st_autorefresh
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.os_manager import ChromeType
 # Configuration
 BASE_SAVE_DIR = "cgiar_ai_pdfs"
 EXCEL_FILE = "cgspace_semantic_data.xlsx"
@@ -174,7 +175,7 @@ def setup_selenium_driver():
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
     try:
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()), options=chrome_options)
         return driver
     except Exception as e:
         logging.error(f"Failed to setup Chrome driver: {e}")
@@ -1443,5 +1444,6 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
