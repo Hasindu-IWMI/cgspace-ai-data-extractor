@@ -26,6 +26,7 @@ from queue import Queue, Empty
 import tempfile
 import math
 from streamlit_autorefresh import st_autorefresh
+from webdriver_manager.chrome import ChromeDriverManager
 # Configuration
 BASE_SAVE_DIR = "cgiar_ai_pdfs"
 EXCEL_FILE = "cgspace_semantic_data.xlsx"
@@ -1441,3 +1442,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
