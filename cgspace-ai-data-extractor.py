@@ -891,6 +891,15 @@ def main():
  
     # Sidebar Settings
     with st.sidebar:
+        st.header("Extraction Options")
+        
+        st.session_state.selected_base_fields = st.multiselect(
+            "Select Base Metadata Fields",
+            options=["title", "date", "author_organization", "geography_focus", "type", "source", "url", "abstract", "language", "doi", "place", "coverage.region", "coverage.country", "contributor.affiliation", "creator.id", "authorship.types", "journal", "volume", "issue", "isbn", "subject.impactArea", "subject.actionArea", "contributor.donor", "contributor.project", "contributor.initiative", "file.mimetype", "file.filename", "identifier.citation"],
+            default=st.session_state.selected_base_fields
+        )
+        st.session_state.extract_ai = st.toggle("Extract Metadata + AI Analyzed Data", value=st.session_state.extract_ai, help="Toggle off to extract only metadata")
+        
         st.header("AI Analysis Prompt")
         prompt_input = st.text_area("Prompt", value=st.session_state.prompt, height=300)
         st.subheader("Parsed Features")
@@ -933,15 +942,6 @@ def main():
                 except ValueError as e:
                     st.error(f"Invalid setting value: {e}")
         
-        st.header("Extraction Options")
-        
-        st.session_state.selected_base_fields = st.multiselect(
-            "Select Base Metadata Fields",
-            options=["title", "date", "author_organization", "geography_focus", "type", "source", "url", "abstract", "language", "doi", "place", "coverage.region", "coverage.country", "contributor.affiliation", "creator.id", "authorship.types", "journal", "volume", "issue", "isbn", "subject.impactArea", "subject.actionArea", "contributor.donor", "contributor.project", "contributor.initiative", "file.mimetype", "file.filename", "identifier.citation"],
-            default=st.session_state.selected_base_fields
-        )
-        st.session_state.extract_ai = st.toggle("Extract Metadata + AI Analyzed Data", value=st.session_state.extract_ai, help="Toggle off to extract only metadata")
- 
     # Main Interface
     st.subheader("Search Configuration")
     query = st.text_input("Search Query", value="Artificial Intelligence")
@@ -1453,6 +1453,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
