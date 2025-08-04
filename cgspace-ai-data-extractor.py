@@ -495,14 +495,14 @@ def save_to_excel(data_list, features, progress_queue=None, extract_ai=False, se
         normalized_base_columns = [normalize_col_name(col) for col in base_columns]
         semantic_columns = [normalize_col_name(feature[0]) for feature in features] if extract_ai else []
         columns = normalized_base_columns + semantic_columns
-        columns = list(dict.fromkeys(columns)) # Remove duplicates, preserve order
+        columns = list(dict.fromkeys(columns))  # Remove duplicates, preserve order
         # Validate and prepare new data
         new_data = []
         num_cols = len(columns)
-        min_required_non_null = len(normalized_base_columns) # Require at least base columns to be non-null
+        min_required_non_null = len(normalized_base_columns)  # Require at least base columns to be non-null
         for row_idx, row in enumerate(data_list):
             row = row[:num_cols] + [None] * (num_cols - len(row)) if len(row) < num_cols else row[:num_cols]
-            non_null_count = sum(1 for val in row[:len(normalized_base_columns)] if val is not None and val != "")
+            non_null_count = sum(1 for v in row[:len(normalized_base_columns)] if v is not None and v != "")
             if non_null_count < min_required_non_null:
                 logging.warning(f"Skipping malformed new row {row_idx + 1}: {row[:10]}... (only {non_null_count}/{min_required_non_null} non-null base values)")
                 continue
@@ -514,10 +514,19 @@ def save_to_excel(data_list, features, progress_queue=None, extract_ai=False, se
         if not new_data:
             logging.warning("No valid new rows to save after validation")
             return
-        # Use openpyxl for memory-efficient append
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.append(columns) # Write header
+        # Load existing workbook if it exists, else create new
+        if os.path.exists(EXCEL_FILE):
+            wb = openpyxl.load_workbook(EXCEL_FILE)
+            ws = wb.active
+            existing_columns = [cell.value for cell in ws[1]] if ws.max_row > 0 else []
+            if existing_columns != columns:
+                logging.warning("Column mismatch detected. Overwriting with new headers.")
+                ws.delete_rows(1, ws.max_row)  # Clear existing data if headers differ
+                ws.append(columns)
+        else:
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.append(columns)  # Write header only if new file
         # Append new rows with progress
         appended_count = 0
         total_rows = len(new_data)
@@ -535,13 +544,13 @@ def save_to_excel(data_list, features, progress_queue=None, extract_ai=False, se
         unnecessary_columns = [
             idx + 1 for idx, col in enumerate(columns)
             if (len(str(col)) <= 3 or str(col).isdigit() or str(col) in placeholders)
-            and col not in normalized_base_columns # Only check against base columns
+            and col not in normalized_base_columns  # Only check against base columns
         ]
         if unnecessary_columns:
             for col_idx in sorted(unnecessary_columns, reverse=True):
                 ws.delete_cols(col_idx)
             logging.info(f"Removed {len(unnecessary_columns)} unnecessary columns")
-        # Save locally
+        # Save
         wb.save(EXCEL_FILE)
         logging.info(f"Appended {appended_count} new rows to {EXCEL_FILE}. Total rows: {ws.max_row}")
         if progress_queue:
@@ -1444,6 +1453,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
