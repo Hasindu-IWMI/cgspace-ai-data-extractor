@@ -1,0 +1,10 @@
+streamlit
+requests
+pandas
+pymupdf
+google-generativeai
+selenium
+beautifulsoup4
+openpyxl
+openai
+streamlit-autorefresh
