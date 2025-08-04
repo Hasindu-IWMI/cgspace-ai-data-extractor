@@ -172,7 +172,7 @@ def setup_selenium_driver():
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
     try:
-        driver = webdriver.Chrome(options=chrome_options)
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
         return driver
     except Exception as e:
         logging.error(f"Failed to setup Chrome driver: {e}")
@@ -1439,4 +1439,5 @@ def main():
             # Auto-refresh for next updates
             st_autorefresh(interval=1000, key="progress_refresh")
 if __name__ == "__main__":
+
     main()
