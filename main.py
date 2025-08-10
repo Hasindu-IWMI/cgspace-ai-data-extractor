@@ -324,7 +324,7 @@ class MainApp:
                         st.session_state.process_thread.join(timeout=5)  # Short timeout
                         if st.session_state.process_thread.is_alive():
                             logging.warning("Threads did not stop gracefully; forcing program exit")
-                            os._exit(0)  # Instant kill of all threads and program
+                            # os._exit(0)  # Instant kill
                     st.session_state.is_running = False
                     st.session_state.stopping = False
                     st.rerun()
