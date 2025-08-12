@@ -1,6 +1,6 @@
 import json
 import logging
-import multiprocessing as mp  # Changed from threading
+import multiprocessing as mp
 
 class Config:
     BASE_SAVE_DIR = "cgiar_ai_pdfs"
@@ -20,7 +20,7 @@ class Config:
         self.processing_start_time = None
         self.current_gemini_requests = mp.Semaphore(self.MAX_PARALLEL_GEMINI_REQUESTS)
         self.request_count_lock = mp.Lock()
-        self.active_requests = mp.Value('i', 0)  # Shared integer value
+        self.active_requests = mp.Value('i', 0)
         self.running_event = mp.Event()
         self.gemini_model = None
         self.GEMINI_AVAILABLE = False

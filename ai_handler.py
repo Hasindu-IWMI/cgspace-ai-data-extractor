@@ -1,5 +1,5 @@
 from google.generativeai import GenerativeModel, configure
-import openai
+from openai import AzureOpenAI
 import logging
 import re
 import time
@@ -35,12 +35,16 @@ class AIHandler:
                 return None, False, None, False
         elif self.ai_provider == "ChatGPT":
             try:
-                client = openai.OpenAI(api_key=self.api_key)
+                client = AzureOpenAI(
+                    azure_endpoint="https://iwmi-gplli-openai.openai.azure.com/",
+                    api_key=self.api_key,
+                    api_version="2024-12-01-preview"  # Note: Fixed the quote placement
+                )
                 self.config.chatgpt_client = client
                 self.config.CHATGPT_AVAILABLE = True
                 return None, False, client, True
             except Exception as e:
-                logging.error(f"Failed to configure ChatGPT API: {e}")
+                logging.error(f"Failed to configure Azure OpenAI (ChatGPT) API: {e}")
                 return None, False, None, False
 
     def parse_prompt_for_features(self, prompt):
@@ -126,7 +130,7 @@ class AIHandler:
                         result = response.text.strip()
                     elif self.ai_provider == "ChatGPT":
                         response = self.config.chatgpt_client.chat.completions.create(
-                            model="gpt-4o",
+                            model="iwmi-gpt-4o-mini",
                             messages=[{"role": "system", "content": prompt.format(chunk=chunk)}]
                         )
                         if not response or not response.choices:
