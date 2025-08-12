@@ -11,7 +11,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.core.os_manager import ChromeType
-from utils import interruptable_sleep, chunk_text_safe
+from utils import interruptable_sleep
 import json
 
 
@@ -19,7 +19,7 @@ class APIClient:
     def __init__(self, config):
         self.config = config
 
-    def setup_selenium_driver():
+    def setup_selenium_driver(self):
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
@@ -29,6 +29,8 @@ class APIClient:
         chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         try:
             driver = webdriver.Chrome(service=Service(ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()), options=chrome_options)
+            # service = Service(ChromeDriverManager().install())
+            # driver = webdriver.Chrome(service=service)
             return driver
         except Exception as e:
             logging.error(f"Failed to setup Chrome driver: {e}")

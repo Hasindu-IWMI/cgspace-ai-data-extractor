@@ -21,7 +21,7 @@ class ScraperRunner:
     def run_scraper(self, query, start_page, end_page, api_key, driver, results, total_processed, pdfs_downloaded, ai_analyses, prompt, features, ai_provider, total_pages, total_samples, min_year, max_year, selected_affiliations, selected_regions, selected_countries, progress_queue, extract_ai, selected_base_fields):
         results = []  # Initialize locally
         if driver is None:
-            driver = APIClient.setup_selenium_driver()
+            driver = APIClient(self.config).setup_selenium_driver()
             if not driver:
                 progress_queue.put("Error: Failed to initialize Selenium WebDriver")
                 if progress_queue:

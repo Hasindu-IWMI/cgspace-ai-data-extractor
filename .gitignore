@@ -4,3 +4,4 @@ __pycache__/
 *.xlsx
 .env
 secrets.toml
+cgspace-ai-extractor

@@ -24,6 +24,7 @@ import threading
 import pandas as pd
 
 
+
 class MainApp:
     def __init__(self):
         self.config = Config()
@@ -333,13 +334,12 @@ class MainApp:
                 if st.session_state.is_running:
                     with status_placeholder.status("Processing Status", expanded=True) as status:
                         
-                        @st.fragment(run_every="1s")
                         def update_progress():
+                            if st.session_state.progress_queue is None:
+                                return
                             update_received = False
-                            while True:
-                                if st.session_state.progress_queue is None:
-                                    return
-                                try:
+                            try:
+                                while True:
                                     update = st.session_state.progress_queue.get_nowait()
                                     logging.info(f"Queue update: {update}")
                                     if update is None:
@@ -425,14 +425,15 @@ class MainApp:
                                             st.session_state.pdf_progress_value = 1.0
                                             st.session_state.pdf_progress_text = "PDF Data Extraction: Completed"
                                         elif "Completed processing for item" in update:
-                                            st.session_state.total_processed += 1  # Increment here
-                                            overall_value = st.session_state.total_processed / st.session_state.total_to_process if st.session_state.total_to_process > 0 else 0
-                                            st.session_state.overall_progress_value = min(overall_value, 1.0)
-                                            st.session_state.overall_progress_text = f"Overall Progress: {int(overall_value * 100)}% ({st.session_state.total_processed}/{st.session_state.total_to_process} items)"
-                                            st.session_state.current_item_progress = 1.0
-                                            st.session_state.current_item_text = f"Current Item {st.session_state.current_item_id}: Completed"
-                                            st.session_state.excel_progress_value = min(st.session_state.total_processed / st.session_state.total_to_process, 1.0)  # Update Excel progress
-                                            st.session_state.excel_progress_text = f"Excel Composing: {int(st.session_state.excel_progress_value * 100)}%"
+                                            st.session_state.total_processed += 1 
+                                            if st.session_state.total_to_process > 0:
+                                                overall_value = st.session_state.total_processed / st.session_state.total_to_process if st.session_state.total_to_process > 0 else 0
+                                                st.session_state.overall_progress_value = min(overall_value, 1.0)
+                                                st.session_state.overall_progress_text = f"Overall Progress: {int(overall_value * 100)}% ({st.session_state.total_processed}/{st.session_state.total_to_process} items)"
+                                                st.session_state.current_item_progress = 1.0
+                                                st.session_state.current_item_text = f"Current Item {st.session_state.current_item_id}: Completed"
+                                                st.session_state.excel_progress_value = min(st.session_state.total_processed / st.session_state.total_to_process, 1.0)  # Update Excel progress
+                                                st.session_state.excel_progress_text = f"Excel Composing: {int(st.session_state.excel_progress_value * 100)}%"
                                         elif "Composing Excel" in update:
                                             if "%" in update:
                                                 percent = int(update.split(": ")[1].split("%")[0])
@@ -455,8 +456,11 @@ class MainApp:
                                             logging.warning(f"Unmatched progress update: {update}")
                                         update_received = True
                                         
-                                except Empty:
-                                    break
+                            except Empty:
+                                pass
+                            except Exception as e:
+                                logging.warning(f"Fragment error in update_chunk_progress: {str(e)}")
+                                return
                             if update_received:
                                 st.rerun()  # Full rerun if new updates to ensure state sync
                             st.progress(st.session_state.overall_progress_value, text=st.session_state.overall_progress_text)
@@ -495,7 +499,6 @@ class MainApp:
                     else:
                         st.session_state.is_chunk_running = True
                         self.config.running_event.set()
-                        # self.heartbeat_monitor()
                         st.session_state.chunk_queue = Queue()
                         st.session_state.current_item_progress = 0.0
                         st.session_state.current_item_text = "Current Item Progress"
@@ -530,8 +533,9 @@ class MainApp:
                 if 'chunk_queue' in st.session_state and st.session_state.chunk_queue is not None:
                     with chunk_status.container():
                         with st.status("Chunk Extraction Status", expanded=True) as chunk_stat:
-                            @st.fragment(run_every="1s")
                             def update_chunk_progress():
+                                if st.session_state.chunk_queue is None:
+                                    return
                                 update_received = False
                                 while True:
                                     try:

@@ -2,8 +2,7 @@ import fitz
 import logging
 import tempfile
 import os
-import time
-from utils import interruptable_sleep  # If needed
+from utils import interruptable_sleep
 from api_client import APIClient
 
 class PDFProcessor:
@@ -29,7 +28,8 @@ class PDFProcessor:
                     if progress_queue and item_id and page_count > 0:
                         progress_percent = int((page_num + 1) / page_count * 100)
                         progress_queue.put(f"Extracting text from PDF for item {item_id}: {progress_percent}%")
-                        chunk_queue.put(f"Extracting text from PDF for item {item_id}: {progress_percent}%")
+                        if chunk_queue:  
+                            chunk_queue.put(f"Extracting text from PDF for item {item_id}: {progress_percent}%")
                     if page_num > 50:
                         logging.info(f"Limiting extraction to first 50 pages")
                         break
@@ -39,6 +39,8 @@ class PDFProcessor:
             pdf.close()
             if progress_queue and item_id:
                 progress_queue.put(f"Extraction completed for item {item_id}")
+                if chunk_queue:  
+                    chunk_queue.put(f"Extraction completed for item {item_id}")
             if not text.strip():
                 logging.error(f"No text extracted (all {page_count} pages)")
             else:
@@ -80,29 +82,33 @@ class PDFProcessor:
                             progress_queue.put(f"Downloading PDF for item {item_id}: {downloaded_size} bytes")
                             if chunk_queue: 
                                 chunk_queue.put(f"Downloading PDF for item {item_id}: {downloaded_size} bytes")
-
             progress_queue.put(f"Download completed for item {item_id}")
             if chunk_queue:
                 chunk_queue.put(f"Download completed for item {item_id}")
 
             if not self.config.running_event.is_set():
                 logging.info(f"Stopping PDF text extraction for {pdf_url} due to stop signal")
+                if tmp_path and os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
                 return None, None
-            pdf_text = self.extract_pdf_text_safe(tmp_path, progress_queue=progress_queue, item_id=item_id,chunk_queue=chunk_queue)
-            progress_queue.put(f"Extraction completed for item {item_id}")
-            if chunk_queue:  
-                chunk_queue.put(f"Extraction completed for item {item_id}")
+            pdf_text = self.extract_pdf_text_safe(tmp_path, progress_queue=progress_queue, item_id=item_id, chunk_queue=chunk_queue)
+            if not pdf_text:
+                logging.warning(f"No text extracted for {pdf_url}")
+                if tmp_path and os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+                return None, None
 
             if not self.config.running_event.is_set():
                 logging.info(f"Stopping semantic processing for {pdf_url} due to stop signal")
+                if tmp_path and os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
                 return None, None
             semantic_metadata = ai_handler.query_ai_for_semantic_metadata(pdf_text, item_id, prompt, features, progress_queue=progress_queue)
         except Exception as e:
             logging.error(f"Failed to process PDF {pdf_url}: {e}")
             progress_queue.put(f"Error processing PDF for item {item_id}: {str(e)}")
-            if chunk_queue: 
+            if chunk_queue:
                 chunk_queue.put(f"Error processing PDF for item {item_id}: {str(e)}")
-
         finally:
             if tmp_path and os.path.exists(tmp_path):
                 os.unlink(tmp_path)
