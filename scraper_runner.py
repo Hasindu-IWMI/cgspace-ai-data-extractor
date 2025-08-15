@@ -138,7 +138,7 @@ class ScraperRunner:
         logging.info("Chunk extraction thread started")
         chunk_queue.put("Starting chunk extraction...")
         if driver is None:
-            driver = APIClient.setup_selenium_driver()
+            driver = APIClient.setup_selenium_driver(self)
             if not driver:
                 chunk_queue.put("Error: Failed to initialize Selenium WebDriver")
                 chunk_queue.put({'type': 'final'})

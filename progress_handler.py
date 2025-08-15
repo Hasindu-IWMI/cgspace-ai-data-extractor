@@ -75,6 +75,7 @@ class ProgressHandler:
                             else:
                                 logging.warning(f"PDF processing incomplete for {pdf_url}: metadata={extracted_metadata}")
                                 progress_queue.put(f"PDF processing incomplete for item {item_id}")
+                                # Continue with metadata-only result instead of returning None
                         except Exception as e:
                             logging.error(f"Error processing PDF {pdf_url}: {e}")
                             progress_queue.put(f"Error processing PDF for item {item_id}: {str(e)}")
@@ -82,17 +83,34 @@ class ProgressHandler:
                     else:
                         logging.info(f"No content link for bitstream {bitstream.get('uuid')} in item {item_id}")
                         progress_queue.put(f"No PDF content link for item {item_id}")
-            # No need for fixed fallback; metadata now has all keys
-            base_metadata = [metadata.get(self.config.FIELD_MAPPING.get(field, field), "Unknown") for field in selected_base_fields]
-            semantic_values = []
+            # Flatten base_metadata to strings (handle lists and empty)
+            base_metadata = []
+            for field in selected_base_fields:
+                value = metadata.get(self.config.FIELD_MAPPING.get(field, field), "Unknown")
+                if isinstance(value, list):
+                    value = "; ".join(str(v) for v in value if v) if value else "Unknown"
+                elif isinstance(value, dict):
+                    value = json.dumps(value) if value else "Unknown"
+                elif value is None or value == "":
+                    value = "Unknown"
+                base_metadata.append(str(value))
+
+            # Flatten semantic_metadata to strings (handle lists and empty)
             if extract_ai:
+                for key in semantic_metadata:
+                    value = semantic_metadata[key]
+                    if isinstance(value, list):
+                        semantic_metadata[key] = "; ".join(str(v) for v in value if v) if value else "Not detected"
+                    elif value is None:
+                        semantic_metadata[key] = "Not detected"
+                    else:
+                        semantic_metadata[key] = str(value)
+
+                semantic_values = []
                 for key, type_desc, default in features:
                     value = semantic_metadata.get(key, default)
-                    if "list" in type_desc:
-                        value = "; ".join(str(v) for v in value) if value else "Not detected"
-                    elif value is None or value == default:
-                        value = "Unknown" if "string" in type_desc else value
                     semantic_values.append(value)
+
             result = base_metadata + semantic_values
             non_null_base = sum(1 for v in result[:len(base_metadata)] if v)
             logging.debug(f"Generated result with {non_null_base}/{len(base_metadata)} base fields: {result}")
@@ -124,5 +142,5 @@ class ProgressHandler:
             del st.session_state.process
         if hasattr(st.session_state, 'chunk_process'):
             del st.session_state.chunk_process
-        self.config.processed_items.clear() # Clear processed items set
+        self.config.processed_items.clear()
         logging.info("Progress state reset")

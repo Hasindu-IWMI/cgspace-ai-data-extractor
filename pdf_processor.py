@@ -59,6 +59,13 @@ class PDFProcessor:
         try:
             api_client = APIClient(self.config)
             response = api_client.make_api_request_safe(pdf_url, stream=True, timeout=10)
+            if response.status_code == 401:
+                logging.warning(f"Unauthorized access to PDF {pdf_url} for item {item_id}. Skipping PDF processing.")
+                progress_queue.put(f"Unauthorized access to PDF for item {item_id}. Skipping.")
+                if chunk_queue:
+                    chunk_queue.put(f"Unauthorized access to PDF for item {item_id}. Skipping.")
+                return None, None  
+            response.raise_for_status() 
             total_size = int(response.headers.get('content-length', 0))
             downloaded_size = 0
             tmp_path = tempfile.mktemp(suffix='.pdf')
@@ -82,6 +89,7 @@ class PDFProcessor:
                             progress_queue.put(f"Downloading PDF for item {item_id}: {downloaded_size} bytes")
                             if chunk_queue: 
                                 chunk_queue.put(f"Downloading PDF for item {item_id}: {downloaded_size} bytes")
+                        interruptable_sleep(0.01, self.config.running_event)
             progress_queue.put(f"Download completed for item {item_id}")
             if chunk_queue:
                 chunk_queue.put(f"Download completed for item {item_id}")
