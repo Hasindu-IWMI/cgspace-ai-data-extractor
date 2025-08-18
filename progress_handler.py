@@ -5,7 +5,6 @@ import re
 from config import Config
 from api_client import APIClient
 from pdf_processor import PDFProcessor
-from excel_writer import ExcelWriter
 from utils import interruptable_sleep
 import streamlit as st
 
@@ -54,6 +53,7 @@ class ProgressHandler:
             logging.debug(f"Item data for {item_id}: {json.dumps(item_data, indent=2)[:1000]}")
             logging.debug(f"Bitstreams for {item_id}: {json.dumps(bitstreams, indent=2)[:1000]}")
             semantic_metadata = {key: default for key, _, default in features} if extract_ai else {}
+            semantic_values = []  
             if extract_ai:
                 for bitstream in bitstreams[:1]:
                     if not self.config.running_event.is_set():
@@ -75,7 +75,6 @@ class ProgressHandler:
                             else:
                                 logging.warning(f"PDF processing incomplete for {pdf_url}: metadata={extracted_metadata}")
                                 progress_queue.put(f"PDF processing incomplete for item {item_id}")
-                                # Continue with metadata-only result instead of returning None
                         except Exception as e:
                             logging.error(f"Error processing PDF {pdf_url}: {e}")
                             progress_queue.put(f"Error processing PDF for item {item_id}: {str(e)}")
@@ -83,20 +82,7 @@ class ProgressHandler:
                     else:
                         logging.info(f"No content link for bitstream {bitstream.get('uuid')} in item {item_id}")
                         progress_queue.put(f"No PDF content link for item {item_id}")
-            # Flatten base_metadata to strings (handle lists and empty)
-            base_metadata = []
-            for field in selected_base_fields:
-                value = metadata.get(self.config.FIELD_MAPPING.get(field, field), "Unknown")
-                if isinstance(value, list):
-                    value = "; ".join(str(v) for v in value if v) if value else "Unknown"
-                elif isinstance(value, dict):
-                    value = json.dumps(value) if value else "Unknown"
-                elif value is None or value == "":
-                    value = "Unknown"
-                base_metadata.append(str(value))
-
-            # Flatten semantic_metadata to strings (handle lists and empty)
-            if extract_ai:
+                # Flatten semantic_metadata to strings (handle lists and empty)
                 for key in semantic_metadata:
                     value = semantic_metadata[key]
                     if isinstance(value, list):
@@ -106,10 +92,20 @@ class ProgressHandler:
                     else:
                         semantic_metadata[key] = str(value)
 
-                semantic_values = []
                 for key, type_desc, default in features:
                     value = semantic_metadata.get(key, default)
                     semantic_values.append(value)
+            # Flatten base_metadata to strings (handle lists and empty)
+            base_metadata = []
+            for field in selected_base_fields:
+                value = metadata.get(self.config.FIELD_MAPPING.get(field, field), "Unknown")
+                if isinstance(value, list):
+                    value = "; ".join(str(v) for v in value if v) if value else "Unknown"
+                elif isinstance(value, dict):
+                    value = json.dumps(value) if value else "Unknown"  # Handle rare dicts
+                elif value is None or value == "":
+                    value = "Unknown"
+                base_metadata.append(str(value))  # Ensure string
 
             result = base_metadata + semantic_values
             non_null_base = sum(1 for v in result[:len(base_metadata)] if v)
@@ -142,5 +138,6 @@ class ProgressHandler:
             del st.session_state.process
         if hasattr(st.session_state, 'chunk_process'):
             del st.session_state.chunk_process
-        self.config.processed_items.clear()
+        self.config.processed_items.clear() 
         logging.info("Progress state reset")
+        st.rerun() 

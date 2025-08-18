@@ -6,8 +6,8 @@ import time
 import json
 from excel_writer import chunk_text_safe, interruptable_sleep
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF logs
-logging.getLogger('tensorflow').setLevel(logging.ERROR)  # Additional suppression
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+logging.getLogger('tensorflow').setLevel(logging.ERROR) 
 
 class AIHandler:
     def __init__(self, config, ai_provider, api_key):
@@ -38,7 +38,7 @@ class AIHandler:
                 client = AzureOpenAI(
                     azure_endpoint="https://iwmi-gplli-openai.openai.azure.com/",
                     api_key=self.api_key,
-                    api_version="2024-12-01-preview"  # Note: Fixed the quote placement
+                    api_version="2024-12-01-preview" 
                 )
                 self.config.chatgpt_client = client
                 self.config.CHATGPT_AVAILABLE = True

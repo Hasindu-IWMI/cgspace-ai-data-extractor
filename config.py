@@ -3,7 +3,7 @@ import logging
 import multiprocessing as mp
 
 class Config:
-    BASE_SAVE_DIR = "cgiar_ai_pdfs"
+    
     EXCEL_FILE = "cgspace_semantic_data.xlsx"
     API_BASE_URL = "https://cgspace.cgiar.org/server/api"
     CHUNK_SIZE = 3000

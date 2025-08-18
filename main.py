@@ -41,6 +41,7 @@ class MainApp:
         self.logger.setup_logging()
 
     def run(self):
+        st.set_page_config(page_title="CGSpace AI Extractor", page_icon="favicon.ico", layout="wide")
         col1, col2 = st.columns([1, 5])
         with col1:
             st.image('CGIAR-logo.png', width=100)
@@ -150,7 +151,7 @@ class MainApp:
             st.header("Settings")
             st.session_state.ai_provider = st.radio("AI Provider", ["Gemini", "ChatGPT"])
             api_key = default_gemini_api_key if st.session_state.ai_provider == "Gemini" else default_chatgpt_api_key
-            self.ai_handler = AIHandler(self.config, st.session_state.ai_provider, api_key)  # Update AIHandler with selected provider and key
+            self.ai_handler = AIHandler(self.config, st.session_state.ai_provider, api_key)  
             chunk_size = st.number_input("Chunk Size", value=self.config.CHUNK_SIZE, min_value=500)
             max_requests = st.number_input("Max Parallel Requests", value=self.config.MAX_PARALLEL_GEMINI_REQUESTS, min_value=1)
             request_delay = st.number_input("Request Delay (seconds)", value=self.config.REQUEST_DELAY, min_value=0.1)
@@ -164,16 +165,16 @@ class MainApp:
                         self.config.MAX_PARALLEL_GEMINI_REQUESTS = int(max_requests)
                         self.config.REQUEST_DELAY = float(request_delay)
                         self.config.EXCEL_FILE = excel_file
-                        # Recreate threading primitives with new values (switch from mp)
+                        
                         self.config.current_gemini_requests = threading.Semaphore(self.config.MAX_PARALLEL_GEMINI_REQUESTS)
                         self.config.request_count_lock = threading.Lock()
-                        self.config.active_requests = 0  # Regular int, since same process
+                        self.config.active_requests = 0 
                         st.success("Settings applied successfully!")
                         logging.info(f"Settings updated successfully. Features: {[f[0] for f in st.session_state.features]}")
                     except ValueError as e:
                         st.error(f"Invalid setting value: {e}")
-        tabs = st.tabs(["Search Configuration", "Help"])
-        with tabs[0]:
+        tabs_head = st.tabs(["Search Configuration", "Help"])
+        with tabs_head[0]:
             st.subheader("Search Configuration")
             query = st.text_input("Search Query", value="", placeholder="Enter keywords to search CGSpace")
             col1, col2 = st.columns(2)
@@ -680,7 +681,7 @@ class MainApp:
             else:
                 st.info("Please perform a search to enable processing and chunk extraction.")
 
-        with tabs[1]:
+        with tabs_head[1]:
             st.subheader("Help & Documentation")
             st.markdown("""
                 Welcome to the **CGSpace Data Extractor & AI Analyzer**, a tool for extracting and analyzing metadata and AI-generated insights from CGSpace publications. Follow these steps to use the application effectively:

@@ -5,7 +5,7 @@ import os
 from api_client import APIClient
 from pdf_processor import PDFProcessor
 from config import Config
-from utils import interruptable_sleep, chunk_text_safe  # If needed
+from utils import interruptable_sleep, chunk_text_safe 
 import tempfile
 
 class ExcelWriter:
@@ -22,7 +22,7 @@ class ExcelWriter:
         total_samples = min(total_items - (start_page - 1) * 10, expected_samples)
         num_pages = end_page - start_page + 1
         progress_queue.put(f"Total documents for chunking: {total_samples}")
-        progress_queue.put(f"Total pages for chunking: {num_pages}") # New: Send total pages for UI
+        progress_queue.put(f"Total pages for chunking: {num_pages}") 
         if total_samples <= 0:
             progress_queue.put("No documents found for chunking.")
             return
@@ -31,7 +31,7 @@ class ExcelWriter:
             if not self.config.running_event.is_set():
                 progress_queue.put("Stopped chunk extraction.")
                 break
-            progress_queue.put(f"Processing page {page} of {end_page}") # New: Page progress message (absolute page, but UI will adjust)
+            progress_queue.put(f"Processing page {page} of {end_page}")
             items, _ = APIClient(self.config).search_items(query, page, min_year, max_year, selected_affiliations, selected_regions, selected_countries)
             for i, item in enumerate(items):
                 current_item = i + 1
@@ -43,7 +43,7 @@ class ExcelWriter:
                 item_id = item_data.get("uuid")
                 base_metadata = [metadata.get(self.config.FIELD_MAPPING.get(field, field), "Unknown") for field in selected_base_fields]
                 pdf_text = ""
-                for bitstream in bitstreams[:1]: # Assume first PDF
+                for bitstream in bitstreams[:1]: 
                     pdf_url = bitstream.get("_links", {}).get("content", {}).get("href")
                     if pdf_url:
                         response = APIClient(self.config).make_api_request_safe(pdf_url, stream=True)
@@ -56,10 +56,10 @@ class ExcelWriter:
                                 downloaded_size += len(data)
                                 if total_size > 0:
                                     progress_percent = int((downloaded_size / total_size) * 100)
-                                    progress_queue.put(f"Downloading PDF for item {item_id}: {progress_percent}%") # New: Download progress
+                                    progress_queue.put(f"Downloading PDF for item {item_id}: {progress_percent}%")
                                 else:
                                     progress_queue.put(f"Downloading PDF for item {item_id}: {downloaded_size} bytes")
-                        progress_queue.put(f"Download completed for item {item_id}") # New: Completion message
+                        progress_queue.put(f"Download completed for item {item_id}")
                         pdf_text = PDFProcessor(self.config).extract_pdf_text_safe(tmp_path, progress_queue=progress_queue, item_id=item_id)
                         os.unlink(tmp_path)
                         break
@@ -69,7 +69,7 @@ class ExcelWriter:
                     continue
                 chunks = chunk_text_safe(pdf_text, progress_queue=progress_queue, item_id=item_id)
                 for chunk_num, chunk in enumerate(chunks, 1):
-                    row = base_metadata + [item_id, chunk_num, chunk] # Repeat metadata per chunk row
+                    row = base_metadata + [item_id, chunk_num, chunk]
                     chunk_rows.append(row)
                 progress_queue.put(f"Chunked {len(chunks)} parts for {item_id}")
         if chunk_rows:
@@ -105,7 +105,7 @@ class ExcelWriter:
             # Validate and prepare new data
             new_data = []
             num_cols = len(columns)
-            min_required_non_null = len(normalized_base_columns) # Require at least base columns to be non-null
+            min_required_non_null = len(normalized_base_columns)
             for row_idx, row in enumerate(data_list):
                 row = row[:num_cols] + [None] * (num_cols - len(row)) if len(row) < num_cols else row[:num_cols]
                 non_null_count = sum(1 for v in row[:len(normalized_base_columns)] if v is not None and v != "")
@@ -150,7 +150,7 @@ class ExcelWriter:
             unnecessary_columns = [
                 idx + 1 for idx, col in enumerate(columns)
                 if (len(str(col)) <= 3 or str(col).isdigit() or str(col) in placeholders)
-                and col not in normalized_base_columns # Only check against base columns
+                and col not in normalized_base_columns 
             ]
             if unnecessary_columns:
                 for col_idx in sorted(unnecessary_columns, reverse=True):

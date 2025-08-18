@@ -76,13 +76,13 @@ class APIClient:
     def search_items(self, query, page, min_year=None, max_year=None, selected_affiliations=[], selected_regions=[], selected_countries=[], size=10):
         url = f"{self.config.API_BASE_URL}/discover/search/objects"
         base_query = query.strip()
-        full_query = base_query # Removed allMetadata: for now; test without it
+        full_query = base_query
         params = {
             "query": full_query,
-            "page": page - 1, # DSpace uses 0-based indexing
+            "page": page - 1,
             "size": size,
             "sort": "score,DESC",
-            "embed": "thumbnail,item/thumbnail" # Re-added to match your example
+            "embed": "thumbnail,item/thumbnail"
         }
         # Add date filter if provided
         if min_year and max_year:
@@ -168,7 +168,7 @@ class APIClient:
             response = self.make_api_request_safe(url)
             item_data = response.json()
             logging.info(f"Fetched item {item_id}: {item_data.get('name', 'No title')}")
-            metadata = MetadataExtractor().extract_metadata_from_web(item_id, item_data, driver)  # Assuming MetadataExtractor class
+            metadata = MetadataExtractor().extract_metadata_from_web(item_id, item_data, driver)
             bitstreams_url = item_data.get("_links", {}).get("bitstreams", {}).get("href")
             bitstreams = []
             if bitstreams_url:
@@ -198,7 +198,7 @@ class APIClient:
                     driver.get(web_url)
                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                     soup = BeautifulSoup(driver.page_source, "html.parser")
-                    # Find potential PDF download links (adjust XPath/CSS as per page structure)
+                    # Find potential PDF download links
                     pdf_links = soup.find_all('a', href=lambda href: href and '.pdf' in href.lower())
                     if pdf_links:
                         pdf_href = pdf_links[0]['href']

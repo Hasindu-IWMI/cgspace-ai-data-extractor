@@ -59,10 +59,14 @@ class MetadataExtractor:
             metadata_entries = item_data.get("metadata", {})
             logging.debug(f"Metadata entries for {item_id}: {metadata_entries}")
             for key, entries in metadata_entries.items():
-                if entries:
-                    # Take the first value for simplicity; handle lists if needed
-                    value = entries[0].get("value", "Unknown")
-                    metadata[key] = value # Use full key as-is
+                values = set()  # Use set for unique values
+                for entry in entries:
+                    value = entry.get("value")
+                    if value:
+                        values.add(value)
+                # Join unique values
+                metadata[key] = "; ".join(sorted(values)) if values else "Unknown"
+
             if driver:
                 try:
                     url = f"https://cgspace.cgiar.org/items/{item_id}/full"
@@ -79,7 +83,16 @@ class MetadataExtractor:
                                 continue
                             key = cells[0].text.strip()
                             value = cells[1].text.strip()
-                            if key not in metadata or metadata[key] == "Unknown":
+                            if key in metadata:
+                                if metadata[key] == "Unknown":
+                                    metadata[key] = value
+                                else:
+                                    # Split existing, add new if unique, join back
+                                    existing_values = set(metadata[key].split("; "))
+                                    if value and value not in existing_values:
+                                        existing_values.add(value)
+                                    metadata[key] = "; ".join(sorted(existing_values))
+                            else:
                                 metadata[key] = value
                     logging.debug(f"Web scraped metadata for {item_id}: {soup.prettify()[:500]}...")
                 except Exception as e:
