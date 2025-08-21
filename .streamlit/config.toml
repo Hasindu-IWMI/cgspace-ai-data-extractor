@@ -4,3 +4,6 @@ backgroundColor = "#FFFFFF"  # White background
 secondaryBackgroundColor = "#F0F2F6"  # Light gray for sidebars/secondary areas
 textColor = "#262730"  # Dark text
 font = "sans serif"  # Or "serif", "monospace"
+
+[server]
+no_proxy = "169.254.169.254,metadata,metadata.google.internal"
