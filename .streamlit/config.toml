@@ -6,4 +6,4 @@ textColor = "#262730"  # Dark text
 font = "sans serif"  # Or "serif", "monospace"
 
 [server]
-no_proxy = "169.254.169.254,metadata,metadata.google.internal"
+NO_PROXY = "169.254.169.254,metadata,metadata.google.internal"
