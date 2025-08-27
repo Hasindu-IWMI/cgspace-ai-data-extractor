@@ -691,14 +691,14 @@ class MainApp:
                 - **Base Metadata Fields**: Select metadata fields (e.g., title, date, author) to extract from CGSpace. Choose at least one field.
                 - **Extract Metadata + AI Analyzed Data**: Toggle ON to include AI-generated insights (requires an uploaded prompt Excel). Toggle OFF for metadata-only extraction.
                 - **Upload Extraction Prompts**:
-                - Upload an Excel file (`AI-CoScientist-Prompt.xlsx`) with prompts for AI analysis. The file should have columns: `Prompt ID` and `Prompt Text`.
+                - Upload an Excel file (`Prompt.xlsx`) with prompts for AI analysis. The file should have columns: `Prompt ID` and `Prompt Text`.
                 - Example prompts: "Year", "Country", "SDGs", "Lead Authors". Ensure prompts specify output formats (e.g., semicolon-separated strings).
                 2. **Settings**:
                 - **AI Provider**: Choose "Gemini" or "ChatGPT" for AI analysis.
                 - **Chunk Size**: Set the text chunk size for AI processing (default: 500 characters).
                 - **Max Parallel Requests**: Set the number of simultaneous AI requests (default: based on config).
                 - **Request Delay**: Set the delay between AI requests (default: 0.1 seconds).
-                - **Excel Output File**: Specify the output Excel file name (default: `cgspace_semantic_data.xlsx`).
+                - **Excel Output File**: Specify the output Excel file name (default: `cgspace_extraction_data.xlsx`).
                 - Click **Apply Settings** to save changes.
 
                 ### 2. Search for Publications
@@ -718,7 +718,7 @@ class MainApp:
                 - **PDF Data Extraction Progress**: Tracks PDF download and extraction.
                 - **Excel Composing Progress**: Tracks Excel file creation.
                 - Click **Stop Processing** to halt the process.
-                - Once complete, download the results via the **Download Excel File** button (saved as `cgspace_semantic_data.xlsx`).
+                - Once complete, download the results via the **Download Excel File** button (saved as `cgspace_extraction_data.xlsx`).
 
                 ### 4. Extract Chunks (Extract Chunks Tab)
                 - After a search, use the **Extract Chunks** tab to extract text chunks from PDFs with metadata.

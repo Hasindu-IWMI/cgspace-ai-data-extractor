@@ -7,7 +7,7 @@ class Logger:
             level=logging.INFO,
             format="%(asctime)s - %(levelname)s - %(message)s",
             handlers=[
-                logging.FileHandler("cgspace_semantic_scraper.log"),
+                logging.FileHandler("cgspace_scraper.log"),
                 logging.StreamHandler()
             ]
         )

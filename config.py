@@ -4,7 +4,7 @@ import multiprocessing as mp
 
 class Config:
     
-    EXCEL_FILE = "cgspace_semantic_data.xlsx"
+    EXCEL_FILE = "cgspace_extraction_data.xlsx"
     API_BASE_URL = "https://cgspace.cgiar.org/server/api"
     CHUNK_SIZE = 3000
     MAX_PARALLEL_GEMINI_REQUESTS = 2
