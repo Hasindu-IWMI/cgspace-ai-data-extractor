@@ -5,6 +5,7 @@
     "author_organization": "dc.contributor.author",
     "geography_focus": "cg.coverage.country",
     "type": "dcterms.type",
+    "keywords": "dcterms.subject",
     "source": "source",
     "url": "dc.identifier.uri",
     "abstract": "dcterms.abstract",

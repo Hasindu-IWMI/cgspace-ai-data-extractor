@@ -59,13 +59,12 @@ class MetadataExtractor:
             metadata_entries = item_data.get("metadata", {})
             logging.debug(f"Metadata entries for {item_id}: {metadata_entries}")
             for key, entries in metadata_entries.items():
-                values = set()  # Use set for unique values
+                values = []  # Use list to preserve order
                 for entry in entries:
                     value = entry.get("value")
                     if value:
-                        values.add(value)
-                # Join unique values
-                metadata[key] = "; ".join(sorted(values)) if values else "Unknown"
+                        values.append(value)
+                metadata[key] = "; ".join(values) if values else "Unknown"
 
             if driver:
                 try:
@@ -88,10 +87,10 @@ class MetadataExtractor:
                                     metadata[key] = value
                                 else:
                                     # Split existing, add new if unique, join back
-                                    existing_values = set(metadata[key].split("; "))
+                                    existing_values = metadata[key].split("; ")
                                     if value and value not in existing_values:
-                                        existing_values.add(value)
-                                    metadata[key] = "; ".join(sorted(existing_values))
+                                        existing_values.append(value)
+                                    metadata[key] = "; ".join(existing_values)
                             else:
                                 metadata[key] = value
                     logging.debug(f"Web scraped metadata for {item_id}: {soup.prettify()[:500]}...")

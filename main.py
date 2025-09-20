@@ -79,7 +79,7 @@ class MainApp:
             st.session_state.excel_progress_text = "Excel Composing Progress"
             st.session_state.search_success = None
             st.session_state.end_page = 1
-            st.session_state.selected_base_fields = ["title", "date", "author_organization", "geography_focus", "type", "source", "url"]
+            st.session_state.selected_base_fields = ["title", "date", "author_organization","keywords", "geography_focus", "type", "source", "url"]
             st.session_state.extract_ai = True
             st.session_state.selected_affiliations = []
             st.session_state.selected_regions = []
@@ -115,7 +115,7 @@ class MainApp:
             st.header("Extraction Options")
             st.session_state.selected_base_fields = st.multiselect(
                 "Select Base Metadata Fields",
-                options=["title", "date", "author_organization", "geography_focus", "type", "source", "url", "abstract", "language", "doi", "place", "coverage.region", "coverage.country", "contributor.affiliation", "creator.id", "authorship.types", "journal", "volume", "issue", "isbn", "subject.impactArea", "subject.actionArea", "contributor.donor", "contributor.project", "contributor.initiative", "file.mimetype", "file.filename", "identifier.citation"],
+                options=["title", "date", "author_organization", "geography_focus", "type", "source", "url", "abstract", "language","keywords" ,"doi", "place", "coverage.region", "coverage.country", "contributor.affiliation", "creator.id", "authorship.types", "journal", "volume", "issue", "isbn", "subject.impactArea", "subject.actionArea", "contributor.donor", "contributor.project", "contributor.initiative", "file.mimetype", "file.filename", "identifier.citation"],
                 default=st.session_state.selected_base_fields
             )
             st.session_state.extract_ai = st.toggle("Extract Metadata + AI Analyzed Data", value=st.session_state.extract_ai, help="Toggle off to extract only metadata")
