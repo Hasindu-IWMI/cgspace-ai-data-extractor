@@ -5,3 +5,5 @@ secondaryBackgroundColor = "#F0F2F6"  # Light gray for sidebars/secondary areas
 textColor = "#262730"  # Dark text
 font = "sans serif"  # Or "serif", "monospace"
 
+[server]
+fileWatcherType = "none"
