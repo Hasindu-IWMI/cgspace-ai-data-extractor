@@ -26,7 +26,7 @@ class AIHandler:
         if self.ai_provider == "Gemini":
             try:
                 configure(api_key=self.api_key)
-                gemini_model = GenerativeModel("gemini-1.5-pro")
+                gemini_model = GenerativeModel("gemini-2.5-pro")
                 self.config.gemini_model = gemini_model
                 self.config.GEMINI_AVAILABLE = True
                 return gemini_model, True, None, False
