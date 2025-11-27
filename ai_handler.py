@@ -198,6 +198,7 @@ class AIHandler:
         chunks = chunk_text_safe(pdf_text, progress_queue=progress_queue, item_id=item_id)
         logging.info(f"Processing {len(chunks)} chunks for semantic extraction for item {item_id}")
         semantic_metadata = {key: default for key, _, default in features}
+        collected_values = {key: [] for key, _, _ in features}  # Collect all values here
         successful_chunks = 0
         for i, chunk in enumerate(chunks):
             if not self.config.running_event.is_set() or self.check_timeout():
@@ -209,49 +210,154 @@ class AIHandler:
                 successful_chunks += 1
                 for key, type_desc, default in features:
                     value = parsed_result.get(key, default)
-                    if value is None:
+                    if value is None or value == default:
                         continue
-                    if value == default:
-                        continue
-                    if "list" in type_desc:
-                        current = semantic_metadata[key]
-                        if isinstance(value, list):
-                            current.extend([v for v in value if v])
-                        else:
-                            current.append(value)
-                        # Deduplicate with handling for unhashable types
-                        try:
-                            semantic_metadata[key] = list(dict.fromkeys(current)) # Preserve order, avoid set()
-                        except TypeError as e:
-                            logging.warning(f"Unhashable type in {key} for item {item_id}: {e}, value: {current}")
-                            # Convert unhashable items to strings
-                            unique_items = []
-                            seen = set()
-                            for item in current:
-                                try:
-                                    item_str = json.dumps(item, sort_keys=True) if isinstance(item, (dict, list)) else str(item)
-                                except TypeError:
-                                    item_str = str(item)
-                                if item_str not in seen:
-                                    seen.add(item_str)
-                                    unique_items.append(item)
-                            semantic_metadata[key] = unique_items
-                            logging.info(f"Deduplicated {key} using string representation: {len(unique_items)} items")
-                    elif "boolean" in type_desc:
-                        if value:
-                            semantic_metadata[key] = True
-                    elif "integer" in type_desc or "float" in type_desc:
-                        try:
-                            semantic_metadata[key] = max(semantic_metadata[key], float(value))
-                        except (ValueError, TypeError):
-                            logging.warning(f"Invalid number for {key}: {value}")
+                    # Collect: extend if list, append otherwise
+                    if isinstance(value, list):
+                        collected_values[key].extend(value)
                     else:
-                        semantic_metadata[key] = value
+                        collected_values[key].append(value)
             if progress_queue:
                 progress_queue.put(f"Analyzing chunk {i + 1}/{len(chunks)} for item {item_id}")
             interruptable_sleep(0.1, self.config.running_event)
+        
+        # Post-chunk aggregation: process collected values per type
+        for key, type_desc, default in features:
+            values = collected_values[key]
+            if not values:
+                semantic_metadata[key] = default
+                continue
+            
+            # Flatten any nested lists and filter junk (e.g., "Not detected", empty, artifacts like '["something"]')
+            flat = []
+            for v in values:
+                if isinstance(v, list):
+                    flat.extend([vv for vv in v if vv and vv not in ["Not detected", "Unknown", ""]])  # Filter invalid
+                elif v and v not in ["Not detected", "Unknown", ""]:
+                    # Handle if v is a stringified list (e.g., '["Limpopo River Basin"]' -> extract inner)
+                    if isinstance(v, str) and v.startswith('[') and v.endswith(']'):
+                        try:
+                            inner = json.loads(v)
+                            if isinstance(inner, list):
+                                flat.extend([vv for vv in inner if vv])
+                                continue
+                        except json.JSONDecodeError:
+                            pass
+                    flat.append(v)
+            
+            if not flat:
+                semantic_metadata[key] = default
+                continue
+            
+            if "list" in type_desc:
+                # Dedup while preserving order
+                unique = []
+                seen = set()
+                for item in flat:
+                    item_str = json.dumps(item, sort_keys=True) if isinstance(item, (dict, list)) else str(item)
+                    if item_str not in seen:
+                        seen.add(item_str)
+                        unique.append(item)
+                semantic_metadata[key] = unique
+            elif "string" in type_desc:
+                # Normalize and group by lower case
+                from collections import defaultdict, Counter
+                lower_to_casings = defaultdict(list)
+                for u in flat:
+                    if u:
+                        lower = str(u).lower().strip()
+                        lower_to_casings[lower].append(str(u))
+                if lower_to_casings:
+                    # Find the most common lower
+                    lower_counts = {k: len(v) for k, v in lower_to_casings.items()}
+                    max_lower = max(lower_counts, key=lower_counts.get)
+                    # Check if dominant (unique or >50% occurrences)
+                    total_occ = sum(lower_counts.values())
+                    if len(lower_to_casings) == 1 or lower_counts[max_lower] > total_occ / 2:
+                        # Take the most common casing
+                        casings = lower_to_casings[max_lower]
+                        most_common_casing = Counter(casings).most_common(1)[0][0]
+                        semantic_metadata[key] = most_common_casing
+                    else:
+                        semantic_metadata[key] = None  # Multiple equally prominent
+                else:
+                    semantic_metadata[key] = default
+            elif "boolean" in type_desc:
+                semantic_metadata[key] = any(flat)  # True if any True
+            elif "integer" in type_desc or "float" in type_desc:
+                try:
+                    semantic_metadata[key] = max(float(v) for v in flat)  # Keep max as before
+                except (ValueError, TypeError):
+                    logging.warning(f"Invalid numbers for {key}: {flat}")
+                    semantic_metadata[key] = default
+            else:
+                semantic_metadata[key] = flat[-1]  # Default to last for unknown types
+        
         logging.info(f"Processed {successful_chunks}/{len(chunks)} chunks for semantic extraction of item {item_id}")
         logging.info(f"Final aggregated metadata: {json.dumps(semantic_metadata, indent=2)[:1000]}...")
         if progress_queue:
             progress_queue.put(f"Analysis completed for item {item_id}")
         return semantic_metadata
+
+        
+    # def query_ai_for_semantic_metadata(self, pdf_text, item_id, prompt, features, progress_queue=None):
+    #     chunks = chunk_text_safe(pdf_text, progress_queue=progress_queue, item_id=item_id)
+    #     logging.info(f"Processing {len(chunks)} chunks for semantic extraction for item {item_id}")
+    #     semantic_metadata = {key: default for key, _, default in features}
+    #     successful_chunks = 0
+    #     for i, chunk in enumerate(chunks):
+    #         if not self.config.running_event.is_set() or self.check_timeout():
+    #             logging.info(f"Stopping chunk {i + 1} processing due to stop signal or timeout")
+    #             break
+    #         logging.info(f"Processing chunk {i + 1}/{len(chunks)} for item {item_id}")
+    #         parsed_result = self.query_ai_single_chunk_safe(chunk, item_id, i, prompt, features)
+    #         if parsed_result:
+    #             successful_chunks += 1
+    #             for key, type_desc, default in features:
+    #                 value = parsed_result.get(key, default)
+    #                 if value is None:
+    #                     continue
+    #                 if value == default:
+    #                     continue
+    #                 if "list" in type_desc:
+    #                     current = semantic_metadata[key]
+    #                     if isinstance(value, list):
+    #                         current.extend([v for v in value if v])
+    #                     else:
+    #                         current.append(value)
+    #                     # Deduplicate with handling for unhashable types
+    #                     try:
+    #                         semantic_metadata[key] = list(dict.fromkeys(current)) # Preserve order, avoid set()
+    #                     except TypeError as e:
+    #                         logging.warning(f"Unhashable type in {key} for item {item_id}: {e}, value: {current}")
+    #                         # Convert unhashable items to strings
+    #                         unique_items = []
+    #                         seen = set()
+    #                         for item in current:
+    #                             try:
+    #                                 item_str = json.dumps(item, sort_keys=True) if isinstance(item, (dict, list)) else str(item)
+    #                             except TypeError:
+    #                                 item_str = str(item)
+    #                             if item_str not in seen:
+    #                                 seen.add(item_str)
+    #                                 unique_items.append(item)
+    #                         semantic_metadata[key] = unique_items
+    #                         logging.info(f"Deduplicated {key} using string representation: {len(unique_items)} items")
+    #                 elif "boolean" in type_desc:
+    #                     if value:
+    #                         semantic_metadata[key] = True
+    #                 elif "integer" in type_desc or "float" in type_desc:
+    #                     try:
+    #                         semantic_metadata[key] = max(semantic_metadata[key], float(value))
+    #                     except (ValueError, TypeError):
+    #                         logging.warning(f"Invalid number for {key}: {value}")
+    #                 else:
+    #                     semantic_metadata[key] = value
+    #         if progress_queue:
+    #             progress_queue.put(f"Analyzing chunk {i + 1}/{len(chunks)} for item {item_id}")
+    #         interruptable_sleep(0.1, self.config.running_event)
+    #     logging.info(f"Processed {successful_chunks}/{len(chunks)} chunks for semantic extraction of item {item_id}")
+    #     logging.info(f"Final aggregated metadata: {json.dumps(semantic_metadata, indent=2)[:1000]}...")
+    #     if progress_queue:
+    #         progress_queue.put(f"Analysis completed for item {item_id}")
+    #     return semantic_metadata
