@@ -97,7 +97,7 @@ class MainApp:
             st.session_state.prev_query = ""
             st.session_state.prev_start_page = 1
             st.session_state.prev_end_page = 1
-            st.session_state.prev_min_year = 2000
+            st.session_state.prev_min_year = 1950
             st.session_state.prev_max_year = 2025
             st.session_state.prev_affiliations = []
             st.session_state.prev_regions = []
@@ -186,8 +186,8 @@ class MainApp:
             with col3:
                 min_year_input = st.number_input(
                     "Min Date Issued",
-                    value=2000,
-                    min_value=2000,
+                    value=1950,
+                    min_value=1950,
                     max_value=2025,
                     step=1
                 )
@@ -195,7 +195,7 @@ class MainApp:
                 max_year_input = st.number_input(
                     "Max Date Issued",
                     value=2025,
-                    min_value=2000,
+                    min_value=1950,
                     max_value=2025,
                     step=1
                 )
@@ -230,7 +230,7 @@ class MainApp:
                 st.session_state.previous_extract_ai = st.session_state.extract_ai
                 self.progress_handler.reset_progress_state()
 
-            min_year = None if min_year_input == 2000 else str(min_year_input)
+            min_year = None if min_year_input == 1950 else str(min_year_input)
             max_year = None if max_year_input == 2025 else str(max_year_input)
             if min_year and max_year and int(min_year) > int(max_year):
                 st.warning("Min year should not exceed max year; results may be empty.")
@@ -705,7 +705,7 @@ class MainApp:
                 - **Search Configuration**:
                 - **Search Query**: Enter keywords to search CGSpace (e.g., "machine learning agriculture"). Leave blank for all documents.
                 - **Start Page / End Page**: Specify the page range for results (each page contains up to 10 items).
-                - **Min/Max Date Issued**: Filter by publication year (default: 2000–2025).
+                - **Min/Max Date Issued**: Filter by publication year (default: 1950–2025).
                 - **Affiliations/Regions/Countries**: Select filters to narrow results (optional).
                 - Click **Search** to validate the query and display the total items and pages found.
                 - **Note**: If you change any search field (query, dates, filters), you must click **Search** again to revalidate.
